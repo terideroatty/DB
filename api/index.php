@@ -16,7 +16,7 @@ $app->post('/getImages', 'getImages');
 $app->post('/profileUpdate','profileUpdate');
 $app->post('/getNS','getNS');
 $app->post('/randdata','randdata');
-
+$app->post('/checkdata','checkdata');
 $app->run();
 
 /************************* USER LOGIN *************************************/
@@ -288,27 +288,26 @@ function getNS(){
     $data = json_decode($request->getBody());
     $user_id=$data->user_id;
     $token=$data->token;
-	$type=$data->type;
+    $type=$data->type;
     $systemToken=apiToken($user_id);
    
     try {
          
         if($systemToken == $token){
             $feedData = '';
+            $modata = '';
             $db = getDB();
             $sql = "SELECT * FROM feed WHERE ftype=:type";
             $stmt = $db->prepare($sql);
             $stmt->bindParam("type", $type, PDO::PARAM_STR);
-        
             $stmt->execute();
             $feedData = $stmt->fetchAll(PDO::FETCH_OBJ);
-           
             $db = null;
-
             if($feedData)
             echo '{"feedData": ' . json_encode($feedData) . '}';
             else
             echo '{"feedData": ""}';
+            
         } else{
             echo '{"error":{"text":"No access"}}';
         }
@@ -317,8 +316,186 @@ function getNS(){
         echo '{"error":{"text":'. $e->getMessage() .'}}';
     }
 }
-function randdata(){
-	 $request = \Slim\Slim::getInstance()->request();
+function getCourse(){
+
+}
+function checkdata(){
+    $request = \Slim\Slim::getInstance()->request();
+    $data = json_decode($request->getBody());
+    $user_id = $data->user_id;
+    $type = $data->type;
+    $token=$data->token;
+    $systemToken=apiToken($user_id);
+     try{
+        if($systemToken == $token){
+           $db = getDB();
+           $testData = '';
+           $testData2 = '';
+           $testData3 = '';
+        
+           $sql = "SELECT * FROM mcourse WHERE uid = :user_id";
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam("user_id", $user_id, PDO::PARAM_STR);
+            $stmt->execute();
+            $testData = $stmt->fetchAll(PDO::FETCH_OBJ);
+           
+            $uptimenow = "UPDATE `timeupdate` SET `datetime`=CURRENT_DATE";
+			$stmt3 = $db->prepare($uptimenow);
+            $stmt3->execute();
+            
+            $datetoday = "SELECT datetime FROM timeupdate";
+			$stmt2 = $db->prepare($datetoday);
+			$stmt2->bindParam("datetime", $datetime, PDO::PARAM_INT);
+			$stmt2->execute();
+            $datetodayNew = $stmt2->fetchAll(PDO::FETCH_OBJ);
+			
+  		    $timestamp = "SELECT datetime FROM time";
+            $stmt4 = $db->prepare($timestamp);
+            $stmt4->execute();
+            $dateDB = $stmt4->fetchAll(PDO::FETCH_OBJ);
+          
+           if($testData){
+
+                if($datetodayNew != $dateDB){
+                    $datarandnew = '';
+                    $datarandnew2 = '';
+                    $datarandnew3 = '';    
+                    
+                    //update Data
+                    $sql3 = "UPDATE mcourse AS m 
+                    INNER JOIN product AS p ON m.uid = :user_id
+                    SET m.mfk = (SELECT pro_id FROM product WHERE pt_id = 1 ORDER BY RAND()%2 LIMIT 1)";
+                    $stmt7 = $db->prepare($sql3);
+                    $stmt7->bindParam("user_id", $user_id, PDO::PARAM_INT);
+                    $stmt7->execute();
+                 
+                    $sql4 = "UPDATE mcourse AS m 
+                    INNER JOIN product AS p ON m.uid = :user_id
+                    SET m.nfk = (SELECT pro_id FROM product WHERE pt_id = 1 ORDER BY RAND()*1000 LIMIT 1)";
+                    $stmt8 = $db->prepare($sql4);
+                    $stmt8->bindParam("user_id", $user_id, PDO::PARAM_INT);
+                    $stmt8->execute();
+
+                    $sql5 = "UPDATE mcourse AS m 
+                    INNER JOIN product AS p ON m.uid = :user_id
+                    SET m.efk = (SELECT pro_id FROM product WHERE pt_id = 1 ORDER BY RAND()%2 LIMIT 1)";
+                    $stmt9 = $db->prepare($sql5);
+                    $stmt9->bindParam("user_id", $user_id, PDO::PARAM_INT);
+                    $stmt9->execute();
+
+                    //Select Data
+                    $datarand = "SELECT product.pro_name FROM product 
+                    INNER JOIN mcourse ON product.pro_id = (SELECT mfk FROM mcourse WHERE uid = :user_id)";
+                    $smm = $db->prepare($datarand);
+                    $smm->bindParam("user_id", $user_id, PDO::PARAM_STR);
+                    $smm->execute();
+                    $datarandnew = $smm->fetchAll(PDO::FETCH_OBJ);
+    
+                    $datarand2 = "SELECT product.pro_name FROM product 
+                    INNER JOIN mcourse ON product.pro_id = (SELECT nfk FROM mcourse WHERE uid = :user_id)";
+                    $smm2 = $db->prepare($datarand2);
+                    $smm2->bindParam("user_id", $user_id, PDO::PARAM_STR);
+                    $smm2->execute();
+                    $datarandnew2 = $smm2->fetchAll(PDO::FETCH_OBJ);
+
+                    $datarand3 = "SELECT product.pro_name FROM product 
+                    INNER JOIN mcourse ON product.pro_id = (SELECT efk FROM mcourse WHERE uid = :user_id)";
+                    $smm3 = $db->prepare($datarand3);
+                    $smm3->bindParam("user_id", $user_id, PDO::PARAM_STR);
+                    $smm3->execute();
+                    $datarandnew3 = $smm3->fetchAll(PDO::FETCH_OBJ);
+
+                    $timestampnew = "UPDATE `time` SET `datetime`=CURRENT_DATE";
+				    $stmt5 = $db->prepare($timestampnew);
+				    $stmt5->execute();
+
+                    echo json_encode(array($datarandnew, $datarandnew2,$datarandnew3));
+                }else{
+                    $sql1 = "SELECT product.pro_name FROM product 
+                    INNER JOIN mcourse ON product.pro_id = (SELECT mfk FROM mcourse WHERE uid = :user_id)";
+                    $stmt1 = $db->prepare($sql1);
+                    $stmt1->bindParam("user_id", $user_id, PDO::PARAM_STR);
+                    $stmt1->execute();
+                    $testData2 = $stmt1->fetchAll(PDO::FETCH_OBJ);
+    
+                    $sql2 = "SELECT product.pro_name FROM product 
+                    INNER JOIN mcourse ON product.pro_id = (SELECT nfk FROM mcourse WHERE uid = :user_id)";
+                    $stmt6 = $db->prepare($sql2);
+                    $stmt6->bindParam("user_id", $user_id, PDO::PARAM_STR);
+                    $stmt6->execute();
+                    $testData3 = $stmt6->fetchAll(PDO::FETCH_OBJ);
+
+                    $new = "SELECT product.pro_name FROM product 
+                    INNER JOIN mcourse ON product.pro_id = (SELECT efk FROM mcourse WHERE uid = :user_id)";
+                    $scc = $db->prepare($new);
+                    $scc->bindParam("user_id", $user_id, PDO::PARAM_STR);
+                    $scc->execute();
+                    $testData3 = $scc->fetchAll(PDO::FETCH_OBJ);
+
+
+                    echo json_encode(array($testData2, $testData3,$testData3));
+                }
+           }else{
+            $dataset = '';
+            $dataset2 = '';
+            $dataset3 = '';
+
+            $insertdata = "UPDATE mcourse AS m 
+            INNER JOIN product AS p ON m.uid = :user_id
+            SET m.mfk = (SELECT pro_id FROM product WHERE pt_id = 1 ORDER BY RAND() LIMIT 1)";
+            $stt = $db->prepare($insertdata);
+            $stt->bindParam("user_id", $user_id, PDO::PARAM_INT);
+            $stt->execute();
+         
+            $insertdata2 = "UPDATE mcourse AS m 
+            INNER JOIN product AS p ON m.uid = :user_id
+            SET m.nfk = (SELECT pro_id FROM product WHERE pt_id = 1 ORDER BY RAND() LIMIT 1)";
+            $stt2 = $db->prepare($insertdata2);
+            $stt2->bindParam("user_id", $user_id, PDO::PARAM_INT);
+            $stt2->execute();
+
+            $insertdata3 = "UPDATE mcourse AS m 
+            INNER JOIN product AS p ON m.uid = :user_id
+            SET m.efk = (SELECT pro_id FROM product WHERE pt_id = 1 ORDER BY RAND() LIMIT 1)";
+            $stt3 = $db->prepare($insertdata3);
+            $stt3->bindParam("user_id", $user_id, PDO::PARAM_INT);
+            $stt3->execute();
+
+            $show = "SELECT product.pro_name FROM product 
+            INNER JOIN mcourse ON product.pro_id = (SELECT mfk FROM mcourse WHERE uid = :user_id)";
+            $sdd = $db->prepare($show);
+            $sdd->bindParam("user_id", $user_id, PDO::PARAM_STR);
+            $sdd->execute();
+            $dataset = $sdd->fetchAll(PDO::FETCH_OBJ);
+
+            $show2 = "SELECT product.pro_name FROM product 
+            INNER JOIN mcourse ON product.pro_id = (SELECT nfk FROM mcourse WHERE uid = :user_id)";
+            $sdd2 = $db->prepare($show2);
+            $sdd2->bindParam("user_id", $user_id, PDO::PARAM_STR);
+            $sdd2->execute();
+            $dataset2 = $sdd2->fetchAll(PDO::FETCH_OBJ);
+
+            $show3 = "SELECT product.pro_name FROM product 
+            INNER JOIN mcourse ON product.pro_id = (SELECT efk FROM mcourse WHERE uid = :user_id)";
+            $sdd3 = $db->prepare($show3);
+            $sdd3->bindParam("user_id", $user_id, PDO::PARAM_STR);
+            $sdd3->execute();
+            $dataset3 = $sdd3->fetchAll(PDO::FETCH_OBJ);
+           }
+           /*if($testData)
+            echo '{"OatData": ' . json_encode($testData) . '}';
+            else
+            echo '{"OatData": ""}';*/
+        }else{
+            echo '{"error":{"text":"No access"}}';
+        }
+        
+     }catch(PDOException $e) {
+        echo '{"error":{"text":'. $e->getMessage() .'}}';
+    }
+}
+function randdata($user_id,$token){
+	$request = \Slim\Slim::getInstance()->request();
     $data = json_decode($request->getBody());
     $user_id=$data->user_id;
     $token=$data->token;
@@ -327,59 +504,133 @@ function randdata(){
         if($systemToken == $token){
             $CourseData = '';
 			$dateDB = '';
-			$datetodayNew = '';
+			$morningdata = '';
+			$noondata = '';
+			$eveningdata = '';
+            $datetodayNew = '';
+            $modata = '';
+            $nodata = '';
+            $evdata = '';
+            $morningja = '';
+            $noonja = '';
+            $eveningja = '';
             $db = getDB();
 			$db1 = getDB();
-			
-			  /////* TIME UPDATE  *///////
-				$uptimenow = "UPDATE `timeupdate` SET `datetime`=CURRENT_DATE";
-				$stmt3 = $db1->prepare($uptimenow);
-				$stmt3->execute();
-				$db1 = null;
-			  ////////////////////////////
-			
+      
+			$uptimenow = "UPDATE `timeupdate` SET `datetime`=CURRENT_DATE";
+			$stmt3 = $db->prepare($uptimenow);
+			$stmt3->execute();
+		
 			
 			$datetoday = "SELECT datetime FROM timeupdate";
 			$stmt2 = $db->prepare($datetoday);
 			$stmt2->bindParam("datetime", $datetime, PDO::PARAM_INT);
 			$stmt2->execute();
-			$datetodayNew = $stmt2->fetchAll(PDO::FETCH_OBJ);
-			//$datetoday = date("Y-m-d",strtotime("today"));
-            //$datetodayNew = $datetoday.toString();
+            $datetodayNew = $stmt2->fetchAll(PDO::FETCH_OBJ);
 			
   		    $timestamp = "SELECT datetime FROM time";
             $stmt1 = $db->prepare($timestamp);
-			//$stmt1->bindParam("time", $time, PDO::PARAM_INT);
             $stmt1->execute();
             $dateDB = $stmt1->fetchAll(PDO::FETCH_OBJ);
-           
-            //$db = null;
 			
 			if ($datetodayNew != $dateDB){
-				$sql = "SELECT * FROM feed";
-				$stmt = $db->prepare($sql);
-				$stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
-				$stmt->execute();
-				$CourseData = $stmt->fetchAll(PDO::FETCH_OBJ);		
-				$sql1 = "UPDATE `time` SET `datetime`=CURRENT_DATE";
+				
+				$morning = "UPDATE users AS u 
+                INNER JOIN course AS c ON u.user_id = :user_id
+                SET u.c_idfk = (SELECT c_id FROM course WHERE ctype = 1 ORDER BY RAND() LIMIT 1)";
+                $stmtm = $db->prepare($morning);
+                $stmtm->bindParam("user_id", $user_id, PDO::PARAM_INT);
+				$stmtm->execute();
+				$noon = "UPDATE users AS u 
+                INNER JOIN course AS c ON u.user_id = :user_id
+                SET u.c_idfk2 = (SELECT c_id FROM course WHERE ctype = 2 ORDER BY RAND() LIMIT 1)";
+                $stmtn = $db->prepare($noon);
+                $stmtn->bindParam("user_id", $user_id, PDO::PARAM_INT);
+                $stmtn->execute();
+				$evening = "UPDATE users AS u 
+                INNER JOIN course AS c ON u.user_id = :user_id
+                SET u.c_idfk3 = (SELECT c_id FROM course WHERE ctype = 3 ORDER BY RAND() LIMIT 1)";
+                $stmte = $db->prepare($evening);
+                $stmte->bindParam("user_id", $user_id, PDO::PARAM_INT);
+				$stmte->execute();
+                
+                 //morning
+                $sql1 = "SELECT course.name,users.username,course.c_id FROM course INNER JOIN users ON course.c_id = users.c_idfk WHERE users.user_id = :user_id";
+                $stmt1 = $db->prepare($sql1);
+                $stmt1->bindParam("user_id", $user_id, PDO::PARAM_INT);
+                $stmt1->execute();
+                $morningja = $stmt1->fetch(PDO::FETCH_OBJ);
+                //noon
+                $sql2 = "SELECT course.name,users.username,course.c_id FROM course INNER JOIN users ON course.c_id = users.c_idfk2 WHERE users.user_id = :user_id";
+                $stmt2 = $db->prepare($sql2);
+                $stmt2->bindParam("user_id", $user_id, PDO::PARAM_INT);
+                $stmt2->execute();
+                $noonja = $stmt2->fetch(PDO::FETCH_OBJ);
+                //evening
+                $sql3 = "SELECT course.name,users.username,course.c_id FROM course INNER JOIN users ON course.c_id = users.c_idfk3 WHERE users.user_id = :user_id";
+                $stmt3 = $db->prepare($sql3);
+                $stmt3->bindParam("user_id", $user_id, PDO::PARAM_INT);
+                $stmt3->execute();
+                $eveningja = $stmt3->fetch(PDO::FETCH_OBJ);
+            
+			    $sql1 = "UPDATE `time` SET `datetime`=CURRENT_DATE";
 				$stmt4 = $db->prepare($sql1);
 				$stmt4->execute();
-				$db = null;
+                echo ('time change');
+            
 			}else{
-				echo 'nothing change';
+                 //morning
+                $datauser = "SELECT course.name,users.username,course.c_id FROM course INNER JOIN users ON course.c_id = users.c_idfk WHERE users.user_id = :user_id";
+                $data1 = $db->prepare($datauser);
+                $data1->bindParam("user_id", $user_id, PDO::PARAM_INT);
+                $data1->execute();
+                $modata = $data1->fetch(PDO::FETCH_OBJ);
+                //noon
+                $datauser2 = "SELECT course.name,users.username,course.c_id FROM course INNER JOIN users ON course.c_id = users.c_idfk2 WHERE users.user_id = :user_id";
+                $data2 = $db->prepare($datauser2);
+                $data2->bindParam("user_id", $user_id, PDO::PARAM_INT);
+                $data2->execute();
+                $nodata = $data2->fetch(PDO::FETCH_OBJ);
+                //evening
+                $datauser3 = "SELECT course.name,users.username,course.c_id FROM course INNER JOIN users ON course.c_id = users.c_idfk3 WHERE users.user_id = :user_id";
+                $data3 = $db->prepare($datauser3);
+                $data3->bindParam("user_id", $user_id, PDO::PARAM_INT);
+                $data3->execute();
+                $evdata = $data3->fetch(PDO::FETCH_OBJ);
+                //prepare userdata and execute
+                echo ('not change');
+                $db = null;
 			}
-   
-
-            if($CourseData)
-            echo '{"feedData": ' . json_encode($CourseData) . '}';
+            if($morningja)
+            echo '{"morningja": ' . json_encode($morningja) . '}';
             else
-            echo '{"feedData": ""}';
+            echo '{"morningja": ""}';
+            if($noonja)
+            echo '{"noonja": ' . json_encode($noonja) . '}';
+            else
+            echo '{"noonja": ""}';
+            if($eveningja)
+            echo '{"eveningja": ' . json_encode($eveningja) . '}';
+            else
+            echo '{"eveningja": ""}';
+            if($modata)
+            echo '{"modata": ' . json_encode($modata) . '}';
+            else
+            echo '{"modata": ""}';
+            if($nodata)
+            echo '{"nodata": ' . json_encode($nodata) . '}';
+            else
+            echo '{"nodata": ""}';
+            if($evdata)
+            echo '{"evdata": ' . json_encode($evdata) . '}';
+            else
+            echo '{"evdata": ""}';
         } else{
             echo '{"error":{"text":"No access"}}';
         }
-       
+        
     } catch(PDOException $e) {
-        echo '{"error":{"text":'. $e->getMessage() .'}}';
+        echo '{"error random":{"text":'. $e->getMessage() .'}}';
     }
 }
 function feed(){
