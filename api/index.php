@@ -17,6 +17,7 @@ $app->post('/profileUpdate','profileUpdate');
 $app->post('/getNS','getNS');
 $app->post('/randdata','randdata');
 $app->post('/checkdata','checkdata');
+$app->post('/getcart','getcart');
 $app->run();
 
 /************************* USER LOGIN *************************************/
@@ -316,9 +317,6 @@ function getNS(){
         echo '{"error":{"text":'. $e->getMessage() .'}}';
     }
 }
-function getCourse(){
-
-}
 function checkdata(){
     $request = \Slim\Slim::getInstance()->request();
     $data = json_decode($request->getBody());
@@ -332,6 +330,9 @@ function checkdata(){
            $testData = '';
            $testData2 = '';
            $testData3 = '';
+           $datanormal = '';
+           $datanormal2 = '';
+           $datanormal3 = '';
         
            $sql = "SELECT * FROM mcourse WHERE uid = :user_id";
             $stmt = $db->prepare($sql);
@@ -364,23 +365,26 @@ function checkdata(){
                     //update Data
                     $sql3 = "UPDATE mcourse AS m 
                     INNER JOIN product AS p ON m.uid = :user_id
-                    SET m.mfk = (SELECT pro_id FROM product WHERE pt_id = 1 ORDER BY RAND()%2 LIMIT 1)";
+                    SET m.mfk = (SELECT pro_id FROM product WHERE pt_id = :type ORDER BY RAND()%2 LIMIT 1)";
                     $stmt7 = $db->prepare($sql3);
                     $stmt7->bindParam("user_id", $user_id, PDO::PARAM_INT);
+                    $stmt7->bindParam("type", $type, PDO::PARAM_INT);
                     $stmt7->execute();
                  
                     $sql4 = "UPDATE mcourse AS m 
-                    INNER JOIN product AS p ON m.uid = :user_id
-                    SET m.nfk = (SELECT pro_id FROM product WHERE pt_id = 1 ORDER BY RAND()*1000 LIMIT 1)";
+                    INNER JOIN product AS p ON m.uid = :user_id AND m.nfk <> m.mfk
+                    SET m.nfk = (SELECT pro_id FROM product WHERE pt_id = :type ORDER BY RAND()*1000 LIMIT 1)";
                     $stmt8 = $db->prepare($sql4);
                     $stmt8->bindParam("user_id", $user_id, PDO::PARAM_INT);
+                    $stmt8->bindParam("type", $type, PDO::PARAM_INT);
                     $stmt8->execute();
 
                     $sql5 = "UPDATE mcourse AS m 
-                    INNER JOIN product AS p ON m.uid = :user_id
-                    SET m.efk = (SELECT pro_id FROM product WHERE pt_id = 1 ORDER BY RAND()%2 LIMIT 1)";
+                    INNER JOIN product AS p ON m.uid = :user_id AND m.efk <> m.mfk AND m.efk <> m.nfk
+                    SET m.efk = (SELECT pro_id FROM product WHERE pt_id = :type ORDER BY RAND()%2 LIMIT 1)";
                     $stmt9 = $db->prepare($sql5);
                     $stmt9->bindParam("user_id", $user_id, PDO::PARAM_INT);
+                    $stmt9->bindParam("type", $type, PDO::PARAM_INT);
                     $stmt9->execute();
 
                     //Select Data
@@ -416,24 +420,24 @@ function checkdata(){
                     $stmt1 = $db->prepare($sql1);
                     $stmt1->bindParam("user_id", $user_id, PDO::PARAM_STR);
                     $stmt1->execute();
-                    $testData2 = $stmt1->fetchAll(PDO::FETCH_OBJ);
+                    $datanormal = $stmt1->fetchAll(PDO::FETCH_OBJ);
     
                     $sql2 = "SELECT product.pro_name FROM product 
                     INNER JOIN mcourse ON product.pro_id = (SELECT nfk FROM mcourse WHERE uid = :user_id)";
                     $stmt6 = $db->prepare($sql2);
                     $stmt6->bindParam("user_id", $user_id, PDO::PARAM_STR);
                     $stmt6->execute();
-                    $testData3 = $stmt6->fetchAll(PDO::FETCH_OBJ);
+                    $datanormal2 = $stmt6->fetchAll(PDO::FETCH_OBJ);
 
                     $new = "SELECT product.pro_name FROM product 
                     INNER JOIN mcourse ON product.pro_id = (SELECT efk FROM mcourse WHERE uid = :user_id)";
                     $scc = $db->prepare($new);
                     $scc->bindParam("user_id", $user_id, PDO::PARAM_STR);
                     $scc->execute();
-                    $testData3 = $scc->fetchAll(PDO::FETCH_OBJ);
+                    $datanormal3 = $scc->fetchAll(PDO::FETCH_OBJ);
 
 
-                    echo json_encode(array($testData2, $testData3,$testData3));
+                    echo json_encode(array($datanormal, $datanormal2,$datanormal3));
                 }
            }else{
             $dataset = '';
@@ -442,23 +446,26 @@ function checkdata(){
 
             $insertdata = "UPDATE mcourse AS m 
             INNER JOIN product AS p ON m.uid = :user_id
-            SET m.mfk = (SELECT pro_id FROM product WHERE pt_id = 1 ORDER BY RAND() LIMIT 1)";
+            SET m.mfk = (SELECT pro_id FROM product WHERE pt_id = :type ORDER BY RAND() LIMIT 1)"; //type = ptype
             $stt = $db->prepare($insertdata);
             $stt->bindParam("user_id", $user_id, PDO::PARAM_INT);
+            $stt->bindParam("type", $type, PDO::PARAM_INT);
             $stt->execute();
          
             $insertdata2 = "UPDATE mcourse AS m 
-            INNER JOIN product AS p ON m.uid = :user_id
-            SET m.nfk = (SELECT pro_id FROM product WHERE pt_id = 1 ORDER BY RAND() LIMIT 1)";
+            INNER JOIN product AS p ON m.uid = :user_id AND m.nfk <> m.mfk
+            SET m.nfk = (SELECT pro_id FROM product WHERE pt_id = :type ORDER BY RAND() LIMIT 1)";//check exist > Use AND
             $stt2 = $db->prepare($insertdata2);
             $stt2->bindParam("user_id", $user_id, PDO::PARAM_INT);
+            $stt2->bindParam("type", $type, PDO::PARAM_INT);
             $stt2->execute();
 
             $insertdata3 = "UPDATE mcourse AS m 
-            INNER JOIN product AS p ON m.uid = :user_id
-            SET m.efk = (SELECT pro_id FROM product WHERE pt_id = 1 ORDER BY RAND() LIMIT 1)";
+            INNER JOIN product AS p ON m.uid = :user_id AND m.efk <> m.mfk AND AND m.efk <> m.nfk
+            SET m.efk = (SELECT pro_id FROM product WHERE pt_id = :type ORDER BY RAND() LIMIT 1)";
             $stt3 = $db->prepare($insertdata3);
             $stt3->bindParam("user_id", $user_id, PDO::PARAM_INT);
+            $stt3->bindParam("type", $type, PDO::PARAM_INT);
             $stt3->execute();
 
             $show = "SELECT product.pro_name FROM product 
@@ -481,6 +488,8 @@ function checkdata(){
             $sdd3->bindParam("user_id", $user_id, PDO::PARAM_STR);
             $sdd3->execute();
             $dataset3 = $sdd3->fetchAll(PDO::FETCH_OBJ);
+
+            echo json_encode(array($dataset, $dataset2,$dataset3));
            }
            /*if($testData)
             echo '{"OatData": ' . json_encode($testData) . '}';
@@ -493,6 +502,52 @@ function checkdata(){
      }catch(PDOException $e) {
         echo '{"error":{"text":'. $e->getMessage() .'}}';
     }
+}
+/*function order(){
+    $request = \Slim\Slim::getInstance()->request();
+    $data = json_decode($request->getBody());
+    $pro_id = $data->pro_id;
+    $quantity = $data->quantity;
+    $token = $data->token;
+    $user_id = $data->user_id;
+    $systemToken=apiToken($user_id);
+    try{
+        
+    }
+}*/
+function getcart(){
+    $request = \Slim\Slim::getInstance()->request();
+    $data = json_decode($request->getBody());
+    $user_id=$data->user_id;
+    $type=$data->type;
+    $token=$data->token;
+    $systemToken=apiToken($user_id);
+    try {
+        if($systemToken == $token){
+            $product = '';
+            $db = getDB();
+
+            $sql = "SELECT p.pro_id, p.pro_name, p.pro_price, p.pro_quantity,p.pro_description ,u.user_id
+            FROM product AS p INNER JOIN users AS u ON u.user_id = :user_id
+            WHERE pt_id = :type;";
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam("type", $type, PDO::PARAM_INT);
+            $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
+            $stmt->execute();
+            $product = $stmt->fetchAll(PDO::FETCH_OBJ);
+
+            if($product)
+             echo '{"product": ' . json_encode($product) . '}';
+             else
+             echo '{"product": ""}';
+        }else{
+            echo '{"error":{"text":"No access"}}';
+        }
+        
+    } catch(PDOException $e) {
+        echo '{"error random":{"text":'. $e->getMessage() .'}}';
+    }
+    
 }
 function randdata($user_id,$token){
 	$request = \Slim\Slim::getInstance()->request();
