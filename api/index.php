@@ -18,6 +18,7 @@ $app->post('/getNS','getNS');
 $app->post('/randdata','randdata');
 $app->post('/checkdata','checkdata');
 $app->post('/getcart','getcart');
+$app->post('/getOrder','getOrder');
 $app->run();
 
 /************************* USER LOGIN *************************************/
@@ -98,7 +99,6 @@ function signup() {
             $created=time();
             if($mainCount==0)
             {
-                
                 /*Inserting user values*/
                 $sql1="INSERT INTO users(username,password,email,name,surname,address,type)VALUES(:username,:password,:email,:name,:surname,:address, :type)";
                 $stmt1 = $db->prepare($sql1);
@@ -226,6 +226,46 @@ function internalUserDetails($input) {
         echo '{"error":{"text":'. $e->getMessage() .'}}';
     }
     
+}
+function getOrder(){
+    $request = \Slim\Slim::getInstance()->request();
+    $data = json_decode($request->getBody());
+    $user_id=$data->user_id;
+    $pro_id=$data->pro_id;
+    $pro_name=$data->pro_name;
+    $count=$data->count;
+    //$count.toString();
+    $pro_price=$data->pro_price;  
+    $type=$data->type;
+    $token=$data->token;
+    $getOrder=$data->getOrder;
+    $systemToken=apiToken($user_id);
+    $yummy = json_decode($getOrder);
+    echo ($yummy);
+    try { 
+        if($systemToken == $token){
+            $total = $pro_price*$count;
+            $db = getDB();
+            $sql = "INSERT INTO `orderfood`(`oname`, `oprice`, `oquantity`, `user_idfk`) VALUES (:pro_name,:pro_price,
+            :count,:user_id)"; 
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam("pro_name", $pro_name, PDO::PARAM_STR);
+            $stmt->bindParam("pro_price", $pro_price, PDO::PARAM_INT);
+            $stmt->bindParam("count", $count, PDO::PARAM_INT);
+            $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
+            $stmt->execute();
+     
+            
+        } else{
+            echo '{"error":{"text":"No access"}}';
+        }
+       
+                           
+        
+       }
+       catch(PDOException $e) {
+           echo '{"error":{"text":'. $e->getMessage() .'}}';
+       }    
 }
 function getDetail(){
   
