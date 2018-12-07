@@ -501,7 +501,7 @@ function checkdata(){
             $stt2->execute();
 
             $insertdata3 = "UPDATE mcourse AS m 
-            INNER JOIN product AS p ON m.uid = :user_id AND m.efk <> m.mfk AND AND m.efk <> m.nfk
+            INNER JOIN product AS p ON m.uid = :user_id AND m.efk <> m.mfk AND m.efk <> m.nfk
             SET m.efk = (SELECT pro_id FROM product WHERE pt_id = :type ORDER BY RAND() LIMIT 1)";
             $stt3 = $db->prepare($insertdata3);
             $stt3->bindParam("user_id", $user_id, PDO::PARAM_INT);
