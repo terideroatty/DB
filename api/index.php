@@ -250,7 +250,7 @@ function getOrder(){
             :count,:user_id)"; 
             $stmt = $db->prepare($sql);
             $stmt->bindParam("pro_name", $pro_name, PDO::PARAM_STR);
-            $stmt->bindParam("pro_price", $pro_price, PDO::PARAM_INT);
+            $stmt->bindParam("pro_price", $pro_price, PDO::PARAM_STR);
             $stmt->bindParam("count", $count, PDO::PARAM_INT);
             $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
             $stmt->execute();
