@@ -233,15 +233,15 @@ function getOrder(){
     $user_id=$data->user_id;
     $pro_id=$data->pro_id;
     $pro_name=$data->pro_name;
-    $count=$data->count;
+    $countn = $data->countn;
     //$count.toString();
     $pro_price=$data->pro_price;  
     $type=$data->type;
     $token=$data->token;
-    $getOrder=$data->getOrder;
+    //$getOrder=$data->getOrder;
     $systemToken=apiToken($user_id);
-    $yummy = json_decode($getOrder);
-    echo ($yummy);
+    //$yummy = json_decode($getOrder);
+    //echo ($yummy);
     try { 
         if($systemToken == $token){
             $total = $pro_price*$count;
