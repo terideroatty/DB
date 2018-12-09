@@ -19,6 +19,8 @@ $app->post('/randdata','randdata');
 $app->post('/checkdata','checkdata');
 $app->post('/getcart','getcart');
 $app->post('/getOrder','getOrder');
+$app->post('/checkPayment','checkPayment');
+$app->post('/updatePayment','updatePayment');
 $app->run();
 
 /************************* USER LOGIN *************************************/
@@ -227,13 +229,96 @@ function internalUserDetails($input) {
     }
     
 }
+function updatePayment(){
+    $request = \Slim\Slim::getInstance()->request();
+    $data = json_decode($request->getBody());
+    $user_id=$data->user_id;
+    $token=$data->token;
+    $systemToken=apiToken($user_id);
+    try {
+        if($systemToken == $token){
+            $db = getDB();
+            $sql = "UPDATE `payment` SET `status`= 1 WHERE puser_idfk=:user_id";
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam("user_id", $user_id,PDO::PARAM_INT);
+            $stmt->execute();
+        }else{
+            echo '{"error":{"text":"No access"}}';
+        }
+        
+    } catch(PDOException $e) {
+        echo '{"error ":{"text":'. $e->getMessage() .'}}';
+    }
+}
+function checkPayment(){
+    $request = \Slim\Slim::getInstance()->request();
+    $data = json_decode($request->getBody());
+    $user_id=$data->user_id;
+    $token=$data->token;
+    $systemToken=apiToken($user_id);
+    try {
+        if($systemToken == $token){
+            $db = getDB();
+            $checkpay = '';
+            $notpay = '';
+            $sql = "SELECT * FROM payment WHERE puser_idfk=:user_id";
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam("user_id", $user_id,PDO::PARAM_INT);
+            $stmt->execute();
+            $mainCount=$stmt->rowCount();
+            if($mainCount==0)
+            {
+                $sql1="INSERT INTO `payment`(`porder`, `status`, `image`, `puser_idfk`) VALUES (CONCAT((SELECT user_id 
+                FROM users WHERE user_id = :user_id),'',CURRENT_DATE()+1-1),0,0,:user_id)";
+                $stmt1 = $db->prepare($sql1);
+                $stmt1->bindParam("user_id", $user_id,PDO::PARAM_INT);
+                $stmt1->execute();  
+        
+                $sql2 = "SELECT status FROM payment WHERE puser_idfk=:user_id";
+                $stmt2 = $db->prepare($sql);
+                $stmt2->bindParam("user_id", $user_id,PDO::PARAM_INT);
+                $stmt2->execute();
+                $checkpay = $stmt2->fetch(PDO::FETCH_OBJ);
+                echo '{"checkpay": ' . json_encode($checkpay) . '}';
+               
+            }else{
+                $sql3 = "SELECT status FROM payment WHERE puser_idfk=:user_id";
+                $stmt3 = $db->prepare($sql);
+                $stmt3->bindParam("user_id", $user_id,PDO::PARAM_INT);
+                $stmt3->execute();
+                $checkpay = $stmt3->fetch(PDO::FETCH_OBJ);
+                echo '{"checkpay": ' . json_encode($checkpay) . '}';
+            } 
+
+            /*$sql = "INSERT INTO orderfood(oname, oprice, oquantity, user_idfk) VALUES (:pro_id,:pro_price,
+            :count,:user_id)";*/
+          
+          
+    
+           /* $sql2 = "INSERT INTO `payment`(`porder`, `status`, `image`, `pdate`) VALUES (CONCAT((SELECT user_id 
+            FROM users WHERE user_id = :user_id),'',CURRENT_DATE()+1-1),0,,:pdate))";
+            $stmt2 = $db->prepare($sql2);
+            $stmt2->bindParam("user_id", $data->user_id, PDO::PARAM_INT);
+            $stmt2->bindParam("pdate", $pdate, PDO::PARAM_INT);
+            $pdate = time();
+            $stmt2->execute();*/
+
+        }else{
+            echo '{"error":{"text":"No access"}}';
+        }
+        
+    } catch(PDOException $e) {
+        echo '{"error ":{"text":'. $e->getMessage() .'}}';
+    }
+    
+}
 function getOrder(){
     $request = \Slim\Slim::getInstance()->request();
     $data = json_decode($request->getBody());
     $user_id=$data->user_id;
     $pro_id=$data->pro_id;
     $pro_name=$data->pro_name;
-    $countn = $data->countn;
+    $count = $data->count;
     //$count.toString();
     $pro_price=$data->pro_price;  
     $type=$data->type;
@@ -246,10 +331,10 @@ function getOrder(){
         if($systemToken == $token){
             $total = $pro_price*$count;
             $db = getDB();
-            $sql = "INSERT INTO `orderfood`(`oname`, `oprice`, `oquantity`, `user_idfk`) VALUES (:pro_name,:pro_price,
+            $sql = "INSERT INTO `orderfood`(`oname`, `oprice`, `oquantity`, `user_idfk`) VALUES (:pro_id,:pro_price,
             :count,:user_id)"; 
             $stmt = $db->prepare($sql);
-            $stmt->bindParam("pro_name", $pro_name, PDO::PARAM_STR);
+            $stmt->bindParam("pro_id", $pro_id, PDO::PARAM_STR);
             $stmt->bindParam("pro_price", $pro_price, PDO::PARAM_STR);
             $stmt->bindParam("count", $count, PDO::PARAM_INT);
             $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
