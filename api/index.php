@@ -289,20 +289,6 @@ function checkPayment(){
                 $checkpay = $stmt3->fetch(PDO::FETCH_OBJ);
                 echo '{"checkpay": ' . json_encode($checkpay) . '}';
             } 
-
-            /*$sql = "INSERT INTO orderfood(oname, oprice, oquantity, user_idfk) VALUES (:pro_id,:pro_price,
-            :count,:user_id)";*/
-          
-          
-    
-           /* $sql2 = "INSERT INTO `payment`(`porder`, `status`, `image`, `pdate`) VALUES (CONCAT((SELECT user_id 
-            FROM users WHERE user_id = :user_id),'',CURRENT_DATE()+1-1),0,,:pdate))";
-            $stmt2 = $db->prepare($sql2);
-            $stmt2->bindParam("user_id", $data->user_id, PDO::PARAM_INT);
-            $stmt2->bindParam("pdate", $pdate, PDO::PARAM_INT);
-            $pdate = time();
-            $stmt2->execute();*/
-
         }else{
             echo '{"error":{"text":"No access"}}';
         }
