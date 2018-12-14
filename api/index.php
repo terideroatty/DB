@@ -21,6 +21,9 @@ $app->post('/getcart','getcart');
 $app->post('/getOrder','getOrder');
 $app->post('/checkPayment','checkPayment');
 $app->post('/updatePayment','updatePayment');
+$app->post('/deleteQuantity','deleteQuantity');
+$app->post('/checkStatus','checkStatus');
+$app->post('/getCK','getCK');
 $app->run();
 
 /************************* USER LOGIN *************************************/
@@ -250,6 +253,52 @@ function updatePayment(){
         echo '{"error ":{"text":'. $e->getMessage() .'}}';
     }
 }
+function getDelivery(){
+    $request = \Slim\Slim::getInstance()->request();
+    $data = json_decode($request->getBody());
+    $user_id=$data->user_id;
+    $token=$data->token;
+    $systemToken=apiToken($user_id);
+    try {
+        if($systemToken == $token){
+            $db = getDB();
+            $sql = "SELECT * FROM payment WHERE puser_idfk=:user_id";
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam("user_id", $user_id,PDO::PARAM_INT);
+            $stmt->execute();
+            $mainCount=$stmt->rowCount();
+            if($mainCount==0)
+            {
+                $sql1="INSERT INTO `payment`(`porder`, `status`, `image`, `puser_idfk`) VALUES (CONCAT((SELECT user_id 
+                FROM users WHERE user_id = :user_id),'',CURRENT_DATE()+1-1),0,0,:user_id)";
+                $stmt1 = $db->prepare($sql1);
+                $stmt1->bindParam("user_id", $user_id,PDO::PARAM_INT);
+                $stmt1->execute();  
+        
+                $sql2 = "SELECT status FROM payment WHERE puser_idfk=:user_id";
+                $stmt2 = $db->prepare($sql);
+                $stmt2->bindParam("user_id", $user_id,PDO::PARAM_INT);
+                $stmt2->execute();
+                $checkpay = $stmt2->fetch(PDO::FETCH_OBJ);
+                echo '{"checkpay": ' . json_encode($checkpay) . '}';
+               
+            }else{
+                $sql3 = "SELECT status FROM payment WHERE puser_idfk=:user_id";
+                $stmt3 = $db->prepare($sql);
+                $stmt3->bindParam("user_id", $user_id,PDO::PARAM_INT);
+                $stmt3->execute();
+                $checkpay = $stmt3->fetch(PDO::FETCH_OBJ);
+                echo '{"checkpay": ' . json_encode($checkpay) . '}';
+            } 
+        }else{
+            echo '{"error":{"text":"No access"}}';
+        }
+        
+    } catch(PDOException $e) {
+        echo '{"error ":{"text":'. $e->getMessage() .'}}';
+    }
+    
+}
 function checkPayment(){
     $request = \Slim\Slim::getInstance()->request();
     $data = json_decode($request->getBody());
@@ -301,6 +350,38 @@ function checkPayment(){
 function getOrder(){
     $request = \Slim\Slim::getInstance()->request();
     $data = json_decode($request->getBody());
+    $pro_id=$data->pro_id;
+    $pro_price=$data->pro_price;
+    $count=$data->count;
+    $user_id=$data->user_id;
+    $token=$data->token;
+    $systemToken=apiToken($user_id);
+    try {
+        if($systemToken == $token){
+            $db = getDB();
+            $sql = "INSERT INTO `orderfood`(`pro_id`, `oprice`, `oquantity`, `puser_idfk`) VALUES (:pro_id,:pro_price,
+            :count,:user_id)";
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam("pro_id", $pro_id, PDO::PARAM_INT);
+            $stmt->bindParam("pro_price", $pro_price, PDO::PARAM_STR);
+            $stmt->bindParam("count", $count, PDO::PARAM_INT);
+            $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
+            $stmt->execute();
+           
+            $db = null;
+           
+            
+        } else{
+            echo '{"error":{"text":"No access"}}';
+        }
+       
+    } catch(PDOException $e) {
+        echo '{"error":{"text":'. $e->getMessage() .'}}';
+    }
+}
+/*function getOrder(){
+    $request = \Slim\Slim::getInstance()->request();
+    $data = json_decode($request->getBody());
     $user_id=$data->user_id;
     $pro_id=$data->pro_id;
     $pro_name=$data->pro_name;
@@ -317,7 +398,7 @@ function getOrder(){
         if($systemToken == $token){
             $total = $pro_price*$count;
             $db = getDB();
-            $sql = "INSERT INTO `orderfood`(`oname`, `oprice`, `oquantity`, `user_idfk`) VALUES (:pro_id,:pro_price,
+            $sql = "INSERT INTO `orderfood`(`pro_id`, `oprice`, `oquantity`, `puser_idfk`) VALUES (:pro_id,:pro_price,
             :count,:user_id)"; 
             $stmt = $db->prepare($sql);
             $stmt->bindParam("pro_id", $pro_id, PDO::PARAM_STR);
@@ -337,7 +418,7 @@ function getOrder(){
        catch(PDOException $e) {
            echo '{"error":{"text":'. $e->getMessage() .'}}';
        }    
-}
+}*/
 function getDetail(){
   
    
@@ -345,7 +426,7 @@ function getDetail(){
          
             $detailData = '';
             $db = getDB();
-          
+
                 $sql = "SELECT * FROM detail  ORDER BY id DESC LIMIT 15";
                 $stmt = $db->prepare($sql);
           
@@ -428,6 +509,89 @@ function getNS(){
         echo '{"error":{"text":'. $e->getMessage() .'}}';
     }
 }
+function getCK(){
+    $request = \Slim\Slim::getInstance()->request();
+    $data = json_decode($request->getBody());
+    $user_id=$data->user_id;
+    $token=$data->token;
+    $systemToken=apiToken($user_id);
+    try {
+         
+        if($systemToken == $token){
+            $cookdetail = '';
+            $db = getDB();
+            $sql = "SELECT * FROM cook";
+            $stmt = $db->prepare($sql);
+            $stmt->execute();
+            $cookdetail = $stmt->fetchAll(PDO::FETCH_OBJ);
+            $db = null;
+            if($cookdetail)
+            echo '{"cookdata": ' . json_encode($cookdetail) . '}';
+            else
+            echo '{"feedData": ""}';
+            
+        } else{
+            echo '{"error":{"text":"No access"}}';
+        }
+       
+    } catch(PDOException $e) {
+        echo '{"error":{"text":'. $e->getMessage() .'}}';
+    }
+}
+function checkStatus(){
+    $request = \Slim\Slim::getInstance()->request();
+    $data = json_decode($request->getBody());
+    $user_id=$data->user_id;
+    $token=$data->token;
+    $systemToken=apiToken($user_id);
+    try {
+        if($systemToken == $token){
+            $dataja = '';
+            $db = getDB();
+            $sql = "SELECT * FROM payment WHERE puser_idfk=:user_id";
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam("user_id", $user_id, PDO::PARAM_INT);
+            $stmt->execute();
+            $dataja = $stmt->fetchAll(PDO::FETCH_OBJ);
+            $db = null;
+            if($dataja)
+            echo '{"paystatus": ' . json_encode($dataja) . '}';
+            else
+            echo '{"feedData": ""}';
+            
+        } else{
+            echo '{"error":{"text":"No access"}}';
+        }
+       
+    } catch(PDOException $e) {
+        echo '{"error":{"text":'. $e->getMessage() .'}}';
+    }
+}
+
+function deleteQuantity(){
+    $request = \Slim\Slim::getInstance()->request();
+    $data = json_decode($request->getBody());
+    $user_id = $data->user_id;
+    $token=$data->token;
+    $count=$data->count;
+    $pro_id=$data->pro_id;
+    $systemToken=apiToken($user_id);
+    try {
+        if($systemToken == $token){
+            $db = getDB();
+            $sql = "UPDATE `product` SET `pro_quantity`= pro_quantity - :count WHERE pro_id=:pro_id";
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam("count", $count,PDO::PARAM_INT);
+            $stmt->bindParam("pro_id", $pro_id,PDO::PARAM_INT);
+            $stmt->execute();
+        }else{
+            echo '{"error":{"text":"No access"}}';
+        }
+        
+    } catch(PDOException $e) {
+        echo '{"error ":{"text":'. $e->getMessage() .'}}';
+    }
+}
 function checkdata(){
     $request = \Slim\Slim::getInstance()->request();
     $data = json_decode($request->getBody());
@@ -499,21 +663,21 @@ function checkdata(){
                     $stmt9->execute();
 
                     //Select Data
-                    $datarand = "SELECT product.pro_name FROM product 
+                    $datarand = "SELECT product.pro_name,product.pro_image FROM product 
                     INNER JOIN mcourse ON product.pro_id = (SELECT mfk FROM mcourse WHERE uid = :user_id)";
                     $smm = $db->prepare($datarand);
                     $smm->bindParam("user_id", $user_id, PDO::PARAM_STR);
                     $smm->execute();
                     $datarandnew = $smm->fetchAll(PDO::FETCH_OBJ);
     
-                    $datarand2 = "SELECT product.pro_name FROM product 
+                    $datarand2 = "SELECT product.pro_name,product.pro_image FROM product 
                     INNER JOIN mcourse ON product.pro_id = (SELECT nfk FROM mcourse WHERE uid = :user_id)";
                     $smm2 = $db->prepare($datarand2);
                     $smm2->bindParam("user_id", $user_id, PDO::PARAM_STR);
                     $smm2->execute();
                     $datarandnew2 = $smm2->fetchAll(PDO::FETCH_OBJ);
 
-                    $datarand3 = "SELECT product.pro_name FROM product 
+                    $datarand3 = "SELECT product.pro_name,product.pro_image FROM product 
                     INNER JOIN mcourse ON product.pro_id = (SELECT efk FROM mcourse WHERE uid = :user_id)";
                     $smm3 = $db->prepare($datarand3);
                     $smm3->bindParam("user_id", $user_id, PDO::PARAM_STR);
@@ -526,21 +690,21 @@ function checkdata(){
 
                     echo json_encode(array($datarandnew, $datarandnew2,$datarandnew3));
                 }else{
-                    $sql1 = "SELECT product.pro_name FROM product 
+                    $sql1 = "SELECT product.pro_name,product.pro_image FROM product 
                     INNER JOIN mcourse ON product.pro_id = (SELECT mfk FROM mcourse WHERE uid = :user_id)";
                     $stmt1 = $db->prepare($sql1);
                     $stmt1->bindParam("user_id", $user_id, PDO::PARAM_STR);
                     $stmt1->execute();
                     $datanormal = $stmt1->fetchAll(PDO::FETCH_OBJ);
     
-                    $sql2 = "SELECT product.pro_name FROM product 
+                    $sql2 = "SELECT product.pro_name,product.pro_image FROM product 
                     INNER JOIN mcourse ON product.pro_id = (SELECT nfk FROM mcourse WHERE uid = :user_id)";
                     $stmt6 = $db->prepare($sql2);
                     $stmt6->bindParam("user_id", $user_id, PDO::PARAM_STR);
                     $stmt6->execute();
                     $datanormal2 = $stmt6->fetchAll(PDO::FETCH_OBJ);
 
-                    $new = "SELECT product.pro_name FROM product 
+                    $new = "SELECT product.pro_name,product.pro_image FROM product 
                     INNER JOIN mcourse ON product.pro_id = (SELECT efk FROM mcourse WHERE uid = :user_id)";
                     $scc = $db->prepare($new);
                     $scc->bindParam("user_id", $user_id, PDO::PARAM_STR);
@@ -579,21 +743,21 @@ function checkdata(){
             $stt3->bindParam("type", $type, PDO::PARAM_INT);
             $stt3->execute();
 
-            $show = "SELECT product.pro_name FROM product 
+            $show = "SELECT product.pro_name,product.pro_image FROM product 
             INNER JOIN mcourse ON product.pro_id = (SELECT mfk FROM mcourse WHERE uid = :user_id)";
             $sdd = $db->prepare($show);
             $sdd->bindParam("user_id", $user_id, PDO::PARAM_STR);
             $sdd->execute();
             $dataset = $sdd->fetchAll(PDO::FETCH_OBJ);
 
-            $show2 = "SELECT product.pro_name FROM product 
+            $show2 = "SELECT product.pro_name,product.pro_image FROM product 
             INNER JOIN mcourse ON product.pro_id = (SELECT nfk FROM mcourse WHERE uid = :user_id)";
             $sdd2 = $db->prepare($show2);
             $sdd2->bindParam("user_id", $user_id, PDO::PARAM_STR);
             $sdd2->execute();
             $dataset2 = $sdd2->fetchAll(PDO::FETCH_OBJ);
 
-            $show3 = "SELECT product.pro_name FROM product 
+            $show3 = "SELECT product.pro_name,product.pro_image FROM product 
             INNER JOIN mcourse ON product.pro_id = (SELECT efk FROM mcourse WHERE uid = :user_id)";
             $sdd3 = $db->prepare($show3);
             $sdd3->bindParam("user_id", $user_id, PDO::PARAM_STR);
@@ -638,7 +802,7 @@ function getcart(){
             $product = '';
             $db = getDB();
 
-            $sql = "SELECT p.pro_id, p.pro_name, p.pro_price, p.pro_quantity,p.pro_description ,u.user_id
+            $sql = "SELECT p.pro_id, p.pro_name, p.pro_price, p.pro_quantity,u.user_id,p.pro_image
             FROM product AS p INNER JOIN users AS u ON u.user_id = :user_id
             WHERE pt_id = :type;";
             $stmt = $db->prepare($sql);
